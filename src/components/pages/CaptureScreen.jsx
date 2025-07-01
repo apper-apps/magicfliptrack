@@ -71,15 +71,27 @@ const handleCameraCapture = async () => {
         }, 'image/jpeg', 0.9);
       };
       
-    } catch (error) {
+} catch (error) {
       console.error('Camera access error:', error);
       
       if (error.name === 'NotAllowedError') {
-        toast.error('Camera access denied. Please allow camera permissions.');
+        toast.error('Camera access denied. Please enable camera permissions in your browser settings and try again. You can also use the Upload button to select photos from your device.');
       } else if (error.name === 'NotFoundError') {
-        toast.error('No camera found on this device');
+        toast.error('No camera found on this device. Please use the Upload button to select photos from your device instead.');
+      } else if (error.name === 'NotReadableError') {
+        toast.error('Camera is currently in use by another application. Please close other camera apps and try again, or use the Upload button.');
+      } else if (error.name === 'OverconstrainedError') {
+        toast.error('Camera constraints not supported. Trying with default settings...');
+        // Try again with basic constraints
+        try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+          // Continue with simplified camera setup...
+          fallbackStream.getTracks().forEach(track => track.stop());
+        } catch (fallbackError) {
+          toast.error('Camera access failed. Please use the Upload button to select photos from your device.');
+        }
       } else {
-        toast.error('Failed to access camera. Please try uploading a file instead.');
+        toast.error('Camera access failed. Please check your browser permissions or use the Upload button to select photos from your device.');
       }
       
       // Fallback to simulated capture for demo purposes
