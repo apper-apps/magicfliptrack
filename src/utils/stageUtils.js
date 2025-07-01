@@ -6,6 +6,10 @@ export const PROJECT_STAGES = [
   { key: 'Complete', label: 'Complete', color: 'bg-green-500', icon: 'CheckCircle' },
 ];
 
+export const getAllStages = () => {
+  return PROJECT_STAGES;
+};
+
 export const getStageInfo = (stageKey) => {
   return PROJECT_STAGES.find(stage => stage.key === stageKey) || PROJECT_STAGES[0];
 };
