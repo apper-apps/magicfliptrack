@@ -1,62 +1,302 @@
-import mediaData from '@/services/mockData/mediaUpdates.json';
-
-let mediaUpdates = [...mediaData];
-
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { toast } from 'react-toastify';
 
 export const mediaService = {
   async getAll() {
-    await delay(300);
-    return [...mediaUpdates];
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "type" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumbnail_url" } },
+          { field: { Name: "stage" } },
+          { field: { Name: "notes" } },
+          { field: { Name: "timestamp" } },
+          { field: { Name: "uploaded_by" } },
+          { field: { Name: "project_id" } }
+        ],
+        orderBy: [
+          {
+            fieldName: "timestamp",
+            sorttype: "DESC"
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('media_update', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching media:", error);
+      toast.error("Failed to load media");
+      return [];
+    }
   },
 
   async getByProjectId(projectId) {
-    await delay(200);
-    return mediaUpdates
-      .filter(media => media.projectId === projectId.toString())
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "type" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumbnail_url" } },
+          { field: { Name: "stage" } },
+          { field: { Name: "notes" } },
+          { field: { Name: "timestamp" } },
+          { field: { Name: "uploaded_by" } },
+          { field: { Name: "project_id" } }
+        ],
+        where: [
+          {
+            FieldName: "project_id",
+            Operator: "EqualTo",
+            Values: [parseInt(projectId)]
+          }
+        ],
+        orderBy: [
+          {
+            fieldName: "timestamp",
+            sorttype: "DESC"
+          }
+        ]
+      };
+
+      const response = await apperClient.fetchRecords('media_update', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return [];
+      }
+
+      return response.data || [];
+    } catch (error) {
+      console.error("Error fetching media by project ID:", error);
+      toast.error("Failed to load project media");
+      return [];
+    }
   },
 
   async getById(id) {
-    await delay(200);
-    const media = mediaUpdates.find(m => m.Id === parseInt(id));
-    if (!media) {
-      throw new Error('Media not found');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        fields: [
+          { field: { Name: "Name" } },
+          { field: { Name: "Tags" } },
+          { field: { Name: "Owner" } },
+          { field: { Name: "type" } },
+          { field: { Name: "url" } },
+          { field: { Name: "thumbnail_url" } },
+          { field: { Name: "stage" } },
+          { field: { Name: "notes" } },
+          { field: { Name: "timestamp" } },
+          { field: { Name: "uploaded_by" } },
+          { field: { Name: "project_id" } }
+        ]
+      };
+
+      const response = await apperClient.getRecordById('media_update', parseInt(id), params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error('Media not found');
+      }
+
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching media with ID ${id}:`, error);
+      throw error;
     }
-    return { ...media };
   },
 
   async create(mediaData) {
-    await delay(500); // Longer delay to simulate upload
-    const newMedia = {
-      ...mediaData,
-      Id: Math.max(...mediaUpdates.map(m => m.Id)) + 1,
-      timestamp: new Date().toISOString(),
-      url: '/api/placeholder/800/600',
-      thumbnailUrl: '/api/placeholder/200/150',
-      uploadedBy: 'Field Manager'
-    };
-    mediaUpdates.push(newMedia);
-    return { ...newMedia };
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        records: [{
+          Name: mediaData.name || `${mediaData.type} Update`,
+          Tags: mediaData.tags || "",
+          Owner: mediaData.owner,
+          type: mediaData.type,
+          url: mediaData.url || "/api/placeholder/800/600",
+          thumbnail_url: mediaData.thumbnailUrl || mediaData.thumbnail_url || "/api/placeholder/200/150",
+          stage: mediaData.stage,
+          notes: mediaData.notes || "",
+          timestamp: mediaData.timestamp || new Date().toISOString(),
+          uploaded_by: mediaData.uploadedBy || mediaData.uploaded_by || "Field Manager",
+          project_id: parseInt(mediaData.projectId || mediaData.project_id)
+        }]
+      };
+
+      const response = await apperClient.createRecord('media_update', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const successfulRecords = response.results.filter(result => result.success);
+        const failedRecords = response.results.filter(result => !result.success);
+        
+        if (failedRecords.length > 0) {
+          console.error(`Failed to create ${failedRecords.length} records:${JSON.stringify(failedRecords)}`);
+          
+          failedRecords.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulRecords.length > 0) {
+          return successfulRecords[0].data;
+        }
+      }
+      
+      throw new Error('Failed to create media');
+    } catch (error) {
+      console.error("Error creating media:", error);
+      throw error;
+    }
   },
 
   async update(id, updateData) {
-    await delay(300);
-    const index = mediaUpdates.findIndex(m => m.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error('Media not found');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        records: [{
+          Id: parseInt(id),
+          ...(updateData.name !== undefined && { Name: updateData.name }),
+          ...(updateData.tags !== undefined && { Tags: updateData.tags }),
+          ...(updateData.owner !== undefined && { Owner: updateData.owner }),
+          ...(updateData.type !== undefined && { type: updateData.type }),
+          ...(updateData.url !== undefined && { url: updateData.url }),
+          ...(updateData.thumbnailUrl !== undefined && { thumbnail_url: updateData.thumbnailUrl }),
+          ...(updateData.stage !== undefined && { stage: updateData.stage }),
+          ...(updateData.notes !== undefined && { notes: updateData.notes }),
+          ...(updateData.timestamp !== undefined && { timestamp: updateData.timestamp }),
+          ...(updateData.uploadedBy !== undefined && { uploaded_by: updateData.uploadedBy }),
+          ...(updateData.projectId !== undefined && { project_id: parseInt(updateData.projectId) })
+        }]
+      };
+
+      const response = await apperClient.updateRecord('media_update', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        throw new Error(response.message);
+      }
+
+      if (response.results) {
+        const successfulUpdates = response.results.filter(result => result.success);
+        const failedUpdates = response.results.filter(result => !result.success);
+        
+        if (failedUpdates.length > 0) {
+          console.error(`Failed to update ${failedUpdates.length} records:${JSON.stringify(failedUpdates)}`);
+          
+          failedUpdates.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`${error.fieldLabel}: ${error.message}`);
+            });
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        if (successfulUpdates.length > 0) {
+          return successfulUpdates[0].data;
+        }
+      }
+      
+      throw new Error('Failed to update media');
+    } catch (error) {
+      console.error("Error updating media:", error);
+      throw error;
     }
-    mediaUpdates[index] = { ...mediaUpdates[index], ...updateData };
-    return { ...mediaUpdates[index] };
   },
 
   async delete(id) {
-    await delay(200);
-    const index = mediaUpdates.findIndex(m => m.Id === parseInt(id));
-    if (index === -1) {
-      throw new Error('Media not found');
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      const params = {
+        RecordIds: [parseInt(id)]
+      };
+
+      const response = await apperClient.deleteRecord('media_update', params);
+      
+      if (!response.success) {
+        console.error(response.message);
+        toast.error(response.message);
+        return false;
+      }
+
+      if (response.results) {
+        const successfulDeletions = response.results.filter(result => result.success);
+        const failedDeletions = response.results.filter(result => !result.success);
+        
+        if (failedDeletions.length > 0) {
+          console.error(`Failed to delete ${failedDeletions.length} records:${JSON.stringify(failedDeletions)}`);
+          
+          failedDeletions.forEach(record => {
+            if (record.message) toast.error(record.message);
+          });
+        }
+        
+        return successfulDeletions.length > 0;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      throw error;
     }
-    mediaUpdates.splice(index, 1);
-    return true;
   }
 };
