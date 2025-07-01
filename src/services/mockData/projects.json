@@ -1,0 +1,74 @@
+[
+  {
+    "Id": 1,
+    "name": "Riverside Fix & Flip",
+    "address": "1234 River St, Springfield, IL",
+    "startDate": "2024-01-15",
+    "targetDate": "2024-04-15",
+    "currentStage": "Demo",
+    "lastUpdateDate": "2024-01-20",
+    "lockboxCode": "4782",
+    "status": "In Progress",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  },
+  {
+    "Id": 2,
+    "name": "Oak Avenue Renovation",
+    "address": "567 Oak Ave, Greenfield, CA",
+    "startDate": "2024-02-01",
+    "targetDate": "2024-05-01",
+    "currentStage": "Rough-In",
+    "lastUpdateDate": "2024-02-10",
+    "lockboxCode": "9156",
+    "status": "In Progress",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  },
+  {
+    "Id": 3,
+    "name": "Maple Street Flip",
+    "address": "890 Maple St, Riverside, TX",
+    "startDate": "2023-12-01",
+    "targetDate": "2024-03-01",
+    "currentStage": "Finishes",
+    "lastUpdateDate": "2024-01-12",
+    "lockboxCode": "7394",
+    "status": "In Progress",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  },
+  {
+    "Id": 4,
+    "name": "Pine Hill Property",
+    "address": "321 Pine Hill Dr, Lakewood, CO",
+    "startDate": "2023-11-15",
+    "targetDate": "2024-02-15",
+    "currentStage": "Complete",
+    "lastUpdateDate": "2024-01-25",
+    "lockboxCode": "2847",
+    "status": "On Market",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  },
+  {
+    "Id": 5,
+    "name": "Sunset Boulevard Fix",
+    "address": "456 Sunset Blvd, Phoenix, AZ",
+    "startDate": "2024-01-01",
+    "targetDate": "2024-04-01",
+    "currentStage": "Demo",
+    "lastUpdateDate": "2023-12-28",
+    "lockboxCode": "5628",
+    "status": "In Progress",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  },
+  {
+    "Id": 6,
+    "name": "Cedar Creek House",
+    "address": "789 Cedar Creek Rd, Austin, TX",
+    "startDate": "2023-10-01",
+    "targetDate": "2024-01-01",
+    "currentStage": "Complete",
+    "lastUpdateDate": "2024-01-18",
+    "lockboxCode": "1739",
+    "status": "Sold",
+    "thumbnailUrl": "/api/placeholder/400/300"
+  }
+]

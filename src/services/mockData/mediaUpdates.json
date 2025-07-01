@@ -1,0 +1,68 @@
+[
+  {
+    "Id": 1,
+    "projectId": "1",
+    "type": "photo",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Demo",
+    "notes": "Started kitchen demolition - old cabinets removed",
+    "timestamp": "2024-01-20T10:30:00Z",
+    "uploadedBy": "Mike Johnson"
+  },
+  {
+    "Id": 2,
+    "projectId": "1",
+    "type": "video",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Demo",
+    "notes": "Video walkthrough of demo progress",
+    "timestamp": "2024-01-20T14:15:00Z",
+    "uploadedBy": "Mike Johnson"
+  },
+  {
+    "Id": 3,
+    "projectId": "2",
+    "type": "photo",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Rough-In",
+    "notes": "Electrical rough-in complete in living room",
+    "timestamp": "2024-02-10T09:45:00Z",
+    "uploadedBy": "Sarah Wilson"
+  },
+  {
+    "Id": 4,
+    "projectId": "2",
+    "type": "photo",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Rough-In",
+    "notes": "Plumbing rough-in progress in master bathroom",
+    "timestamp": "2024-02-10T11:20:00Z",
+    "uploadedBy": "Sarah Wilson"
+  },
+  {
+    "Id": 5,
+    "projectId": "3",
+    "type": "photo",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Finishes",
+    "notes": "Hardwood flooring installation in progress",
+    "timestamp": "2024-01-12T13:30:00Z",
+    "uploadedBy": "Carlos Martinez"
+  },
+  {
+    "Id": 6,
+    "projectId": "4",
+    "type": "photo",
+    "url": "/api/placeholder/800/600",
+    "thumbnailUrl": "/api/placeholder/200/150",
+    "stage": "Complete",
+    "notes": "Final staging complete - ready for market",
+    "timestamp": "2024-01-25T16:00:00Z",
+    "uploadedBy": "Lisa Chen"
+  }
+]

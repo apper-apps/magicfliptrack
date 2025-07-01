@@ -1,0 +1,44 @@
+[
+  {
+    "projectId": "1",
+    "isCompliant": true,
+    "daysSinceUpdate": 3,
+    "requiresUpdate": false,
+    "lastNotificationDate": "2024-01-20T10:30:00Z"
+  },
+  {
+    "projectId": "2",
+    "isCompliant": true,
+    "daysSinceUpdate": 5,
+    "requiresUpdate": false,
+    "lastNotificationDate": "2024-02-10T11:20:00Z"
+  },
+  {
+    "projectId": "3",
+    "isCompliant": false,
+    "daysSinceUpdate": 11,
+    "requiresUpdate": true,
+    "lastNotificationDate": "2024-01-12T13:30:00Z"
+  },
+  {
+    "projectId": "4",
+    "isCompliant": true,
+    "daysSinceUpdate": 2,
+    "requiresUpdate": false,
+    "lastNotificationDate": "2024-01-25T16:00:00Z"
+  },
+  {
+    "projectId": "5",
+    "isCompliant": false,
+    "daysSinceUpdate": 28,
+    "requiresUpdate": true,
+    "lastNotificationDate": "2023-12-28T10:00:00Z"
+  },
+  {
+    "projectId": "6",
+    "isCompliant": true,
+    "daysSinceUpdate": 5,
+    "requiresUpdate": false,
+    "lastNotificationDate": "2024-01-18T12:00:00Z"
+  }
+]

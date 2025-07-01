@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'react-toastify/dist/ReactToastify.css';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+    line-height: 1.6;
+  }
+  
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    color: #1f2937;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: manipulation;
+  }
+
+  input, textarea {
+    font-size: 16px; /* Prevents zoom on iOS */
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:from-primary-600 hover:to-primary-700 transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  .btn-secondary {
+    @apply bg-secondary-500 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:bg-secondary-600 transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  .btn-accent {
+    @apply bg-accent-500 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:bg-accent-600 transition-all duration-200 transform hover:scale-105 active:scale-95;
+  }
+  
+  .card-elevated {
+    @apply bg-white rounded-xl shadow-xl border border-gray-100;
+  }
+  
+  .project-card {
+    @apply card-elevated p-4 transition-all duration-200 hover:shadow-2xl hover:scale-102;
+  }
+  
+  .compliance-flag {
+    @apply absolute inset-0 bg-gradient-to-r from-error/90 to-red-600/90 text-white rounded-xl flex items-center justify-center animate-pulse-border border-2 border-error;
+  }
+  
+  .stage-badge {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .quick-capture-bar {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 shadow-2xl z-50;
+  }
+  
+  .media-timeline {
+    @apply space-y-4 max-h-96 overflow-y-auto;
+  }
+  
+  .compliance-overlay {
+    @apply absolute inset-0 bg-gradient-to-t from-error/95 via-error/80 to-error/60 rounded-xl flex flex-col items-center justify-center text-white text-center p-4;
+  }
+}
+
+/* Custom scrollbar */
+.media-timeline::-webkit-scrollbar {
+  width: 4px;
+}
+
+.media-timeline::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.media-timeline::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.media-timeline::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Toast customization */
+.Toastify__toast-container {
+  width: auto;
+  max-width: 90vw;
+}
+
+.Toastify__toast {
+  border-radius: 0.75rem;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 500;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  min-height: 60px;
+  padding: 16px;
+}
+
+.Toastify__toast--success {
+  background: linear-gradient(135deg, #00D37F, #00B36C);
+}
+
+.Toastify__toast--error {
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+}
+
+.Toastify__toast--warning {
+  background: linear-gradient(135deg, #FFB800, #F59E0B);
+}
+
+.Toastify__toast--info {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+.Toastify__progress-bar {
+  background: rgba(255, 255, 255, 0.7);
+}
+
+/* Prevent horizontal scroll on mobile */
+body {
+  overflow-x: hidden;
+}
+
+/* Ensure proper mobile viewport */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+}
