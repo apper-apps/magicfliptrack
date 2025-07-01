@@ -32,10 +32,13 @@ export const useMedia = (projectId = null) => {
     }
   };
 
-  const createMedia = async (mediaData) => {
+const createMedia = async (mediaData) => {
     try {
       setError('');
-      const newMedia = await mediaService.create(mediaData);
+      // Use batch photo creation if photos array is provided
+      const newMedia = mediaData.photos && mediaData.photos.length > 0
+        ? await mediaService.createWithPhotos(mediaData)
+        : await mediaService.create(mediaData);
       setMedia(prev => [newMedia, ...prev]);
       return newMedia;
     } catch (err) {

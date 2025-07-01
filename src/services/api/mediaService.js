@@ -296,6 +296,97 @@ export const mediaService = {
       return false;
     } catch (error) {
       console.error("Error deleting media:", error);
+throw error;
+    }
+  },
+
+  async createWithPhotos(mediaData) {
+    try {
+      const { ApperClient } = window.ApperSDK;
+      const apperClient = new ApperClient({
+        apperProjectId: import.meta.env.VITE_APPER_PROJECT_ID,
+        apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
+      });
+
+      // First create the media update record
+      const mediaUpdateData = {
+        Name: `Photo Update - ${mediaData.stage}`,
+        Tags: mediaData.tags || "",
+        Owner: mediaData.owner,
+        type: 'photo',
+        url: mediaData.photos?.[0]?.url || "/api/placeholder/800/600",
+        thumbnail_url: mediaData.photos?.[0]?.url || "/api/placeholder/200/150",
+        stage: mediaData.stage,
+        notes: mediaData.notes || "",
+        timestamp: new Date().toISOString(),
+        uploaded_by: mediaData.uploadedBy || "Field Manager",
+        project_id: parseInt(mediaData.projectId)
+      };
+
+      const mediaParams = {
+        records: [mediaUpdateData]
+      };
+
+      const mediaResponse = await apperClient.createRecord('media_update', mediaParams);
+      
+      if (!mediaResponse.success) {
+        console.error(mediaResponse.message);
+        toast.error(mediaResponse.message);
+        throw new Error(mediaResponse.message);
+      }
+
+      let mediaUpdateRecord = null;
+      if (mediaResponse.results && mediaResponse.results.length > 0) {
+        const successfulMedia = mediaResponse.results.filter(result => result.success);
+        if (successfulMedia.length > 0) {
+          mediaUpdateRecord = successfulMedia[0].data;
+        }
+      }
+
+      if (!mediaUpdateRecord) {
+        throw new Error('Failed to create media update record');
+      }
+
+      // Then create individual photo records linked to the media update
+      if (mediaData.photos && mediaData.photos.length > 0) {
+        const photoRecords = mediaData.photos.map((photo, index) => ({
+          Name: `Photo ${index + 1} - ${mediaData.stage}`,
+          Tags: mediaData.tags || "",
+          Owner: mediaData.owner,
+          media_update_id: mediaUpdateRecord.Id,
+          url: photo.url || "/api/placeholder/800/600",
+          thumbnail_url: photo.url || "/api/placeholder/200/150"
+        }));
+
+        const photoParams = {
+          records: photoRecords
+        };
+
+        const photoResponse = await apperClient.createRecord('photo', photoParams);
+        
+        if (!photoResponse.success) {
+          console.error(photoResponse.message);
+          toast.error(photoResponse.message);
+          // Continue even if photo creation fails, media update was successful
+        }
+
+        if (photoResponse.results) {
+          const failedPhotos = photoResponse.results.filter(result => !result.success);
+          if (failedPhotos.length > 0) {
+            console.error(`Failed to create ${failedPhotos.length} photos:${JSON.stringify(failedPhotos)}`);
+            failedPhotos.forEach(record => {
+              record.errors?.forEach(error => {
+                toast.error(`Photo error - ${error.fieldLabel}: ${error.message}`);
+              });
+              if (record.message) toast.error(`Photo error: ${record.message}`);
+            });
+          }
+        }
+      }
+
+      return mediaUpdateRecord;
+    } catch (error) {
+      console.error("Error creating media with photos:", error);
       throw error;
     }
   }

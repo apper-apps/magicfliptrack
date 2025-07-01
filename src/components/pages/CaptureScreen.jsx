@@ -20,15 +20,27 @@ const CaptureScreen = () => {
   const [captureType, setCaptureType] = useState(initialType);
   const [selectedProject, setSelectedProject] = useState(projectId || '');
   const [selectedStage, setSelectedStage] = useState('Demo');
-  const [notes, setNotes] = useState('');
+const [notes, setNotes] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  const [capturedMedia, setCapturedMedia] = useState(null);
+  const [photos, setPhotos] = useState([]);
   
   const fileInputRef = useRef(null);
   const { createMedia } = useMedia();
   const { markProjectUpdated } = useCompliance();
   const { projects, loading: projectsLoading } = useProjects();
+const addPhoto = (photoData) => {
+    setPhotos(prev => [...prev, { ...photoData, id: Date.now() }]);
+  };
+
+  const removePhoto = (photoId) => {
+    setPhotos(prev => prev.filter(photo => photo.id !== photoId));
+  };
+
+  const clearPhotos = () => {
+    setPhotos([]);
+  };
+
 const handleCameraCapture = async () => {
     try {
       // Check if camera is supported
@@ -58,16 +70,18 @@ const handleCameraCapture = async () => {
         // Convert to blob
         canvas.toBlob((blob) => {
           const url = URL.createObjectURL(blob);
-          setCapturedMedia({
+          const newPhoto = {
             type: 'photo',
             url: url,
             timestamp: new Date().toISOString(),
             file: blob
-          });
+          };
+          
+          addPhoto(newPhoto);
           
           // Stop camera stream
           stream.getTracks().forEach(track => track.stop());
-          toast.success('Photo captured successfully!');
+          toast.success(`Photo ${photos.length + 1} captured successfully!`);
         }, 'image/jpeg', 0.9);
       };
       
@@ -95,49 +109,49 @@ const handleCameraCapture = async () => {
       }
       
       // Fallback to simulated capture for demo purposes
-      setCapturedMedia({
-        type: captureType,
+      const fallbackPhoto = {
+        type: 'photo',
         url: '/api/placeholder/800/600',
         timestamp: new Date().toISOString()
-      });
+      };
+      addPhoto(fallbackPhoto);
     }
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
-    if (file) {
+const handleFileUpload = (event) => {
+    const files = Array.from(event.target.files);
+    files.forEach(file => {
       const fileType = file.type.startsWith('video/') ? 'video' : 'photo';
-      setCaptureType(fileType);
-      
-      // In a real app, you'd process the file here
-      setCapturedMedia({
-        type: fileType,
-        url: URL.createObjectURL(file),
-        timestamp: new Date().toISOString(),
-        file: file
-      });
+      if (fileType === 'photo') {
+        const newPhoto = {
+          type: 'photo',
+          url: URL.createObjectURL(file),
+          timestamp: new Date().toISOString(),
+          file: file
+        };
+        addPhoto(newPhoto);
+      }
+    });
+    
+    if (files.length > 0) {
+      toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} uploaded successfully!`);
     }
   };
 
-  const handleVideoRecord = () => {
+const handleVideoRecord = () => {
     if (isRecording) {
       setIsRecording(false);
-      // Simulate recorded video
-      setCapturedMedia({
-        type: 'video',
-        url: '/api/placeholder/800/600',
-        timestamp: new Date().toISOString()
-      });
-      toast.success('Video recording completed');
+      // Video recording functionality not implemented yet
+      toast.info('Video recording feature coming soon');
     } else {
       setIsRecording(true);
       toast.info('Video recording started (max 30 seconds)');
-      // In a real app, start video recording
+      // Auto-stop after 30 seconds
       setTimeout(() => {
         if (isRecording) {
           handleVideoRecord();
         }
-      }, 30000); // Auto-stop after 30 seconds
+      }, 30000);
     }
   };
 
@@ -147,8 +161,8 @@ const handleSave = async () => {
       return;
     }
 
-    if (!capturedMedia) {
-      toast.error('Please capture some media first');
+    if (photos.length === 0) {
+      toast.error('Please capture some photos first');
       return;
     }
 
@@ -162,9 +176,10 @@ try {
       
       const mediaData = {
         projectId: selectedProject,
-        type: capturedMedia.type,
+        type: 'photo',
         stage: selectedStage,
         notes: notes.trim(),
+        photos: photos
       };
 
       await createMedia(mediaData);
@@ -174,7 +189,7 @@ try {
         await markProjectUpdated(selectedProject);
       }
       
-      toast.success(`${capturedMedia.type === 'video' ? 'Video' : 'Photo'} uploaded successfully!`);
+      toast.success(`${photos.length} photo${photos.length > 1 ? 's' : ''} uploaded successfully!`);
       
       // Navigate back
       if (selectedProject) {
@@ -183,14 +198,14 @@ try {
         navigate('/');
       }
     } catch (err) {
-      toast.error('Failed to upload media');
+      toast.error('Failed to upload photos');
     } finally {
       setIsUploading(false);
     }
   };
 
-  const handleDiscard = () => {
-    setCapturedMedia(null);
+const handleDiscard = () => {
+    clearPhotos();
     setNotes('');
   };
 
@@ -304,20 +319,18 @@ try {
             Capture Media
           </h3>
           
-          {!capturedMedia ? (
+{photos.length === 0 ? (
             <div className="space-y-4">
               {/* Camera Preview Area */}
               <div className="aspect-video bg-gray-200 rounded-lg flex items-center justify-center border-2 border-dashed border-gray-300">
                 <div className="text-center">
-                  <ApperIcon name={captureType === 'video' ? 'Video' : 'Camera'} size={48} className="text-gray-400 mx-auto mb-2" />
-                  <p className="text-gray-500">
-                    {captureType === 'video' ? 'Ready to record video' : 'Ready to take photo'}
-                  </p>
+                  <ApperIcon name="Camera" size={48} className="text-gray-400 mx-auto mb-2" />
+                  <p className="text-gray-500">Ready to take photos</p>
+                  <p className="text-sm text-gray-400 mt-1">You can capture multiple photos in one update</p>
                 </div>
               </div>
               
               {/* Capture Controls */}
-{/* Capture Controls */}
               <div className="grid grid-cols-3 gap-3">
                 <Button
                   variant="outline"
@@ -328,72 +341,90 @@ try {
                   Upload
                 </Button>
                 
-                {captureType === 'video' ? (
-                  <Button
-                    variant={isRecording ? 'danger' : 'primary'}
-                    icon={isRecording ? 'Square' : 'Video'}
-                    onClick={handleVideoRecord}
-                    className="col-span-2"
-                    disabled={!selectedProject}
-                  >
-                    {isRecording ? 'Stop Recording' : 'Start Recording'}
-                  </Button>
-                ) : (
-<Button
-                    variant="primary"
-                    icon="Camera"
-                    onClick={handleCameraCapture}
-                    className="col-span-2"
-                    disabled={!selectedProject}
-                  >
-                    Take Photo
-                  </Button>
-                )}
+                <Button
+                  variant="primary"
+                  icon="Camera"
+                  onClick={handleCameraCapture}
+                  className="col-span-2"
+                  disabled={!selectedProject}
+                >
+                  Take Photo
+                </Button>
               </div>
             </div>
           ) : (
             <div className="space-y-4">
-              {/* Preview */}
-              <div className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
-                <img 
-                  src={capturedMedia.url} 
-                  alt="Captured media"
-                  className="w-full h-full object-cover"
-                />
-                {capturedMedia.type === 'video' && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="bg-black bg-opacity-50 rounded-full p-4">
-                      <ApperIcon name="Play" size={32} className="text-white ml-1" />
+              {/* Photo Count and Status */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <ApperIcon name="Images" size={20} className="text-primary-600" />
+                  <span className="font-medium text-gray-900">
+                    {photos.length} photo{photos.length > 1 ? 's' : ''} captured
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  icon="Camera"
+                  onClick={handleCameraCapture}
+                  disabled={!selectedProject}
+                >
+                  Add More
+                </Button>
+              </div>
+
+              {/* Photo Carousel */}
+              <div className="space-y-3">
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {photos.map((photo, index) => (
+                    <div key={photo.id} className="relative flex-shrink-0">
+                      <div className="w-24 h-24 bg-gray-200 rounded-lg overflow-hidden border-2 border-gray-300">
+                        <img 
+                          src={photo.url} 
+                          alt={`Photo ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <button
+                        onClick={() => removePhoto(photo.id)}
+                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs hover:bg-red-600"
+                      >
+                        <ApperIcon name="X" size={12} />
+                      </button>
+                      <div className="absolute bottom-1 left-1 bg-black bg-opacity-50 text-white text-xs px-1 rounded">
+                        {index + 1}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
               
-              {/* Preview Controls */}
+              {/* Batch Controls */}
               <div className="flex gap-3">
                 <Button
                   variant="outline"
                   icon="RotateCcw"
                   onClick={handleDiscard}
                 >
-                  Retake
+                  Clear All
                 </Button>
                 <Button
-                  variant="accent"
-                  icon="Check"
-                  onClick={() => {/* Preview/Edit */}}
-                  className="flex-1"
+                  variant="outline"
+                  icon="Upload"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={!selectedProject}
                 >
-                  Preview
+                  Add Files
                 </Button>
               </div>
             </div>
           )}
           
-          <input
+<input
             ref={fileInputRef}
             type="file"
-            accept="image/*,video/*"
+            accept="image/*"
+            multiple
             onChange={handleFileUpload}
             className="hidden"
           />
@@ -445,9 +476,9 @@ try {
             loading={isUploading}
 onClick={handleSave}
             icon="Upload"
-            disabled={!capturedMedia || !selectedProject}
+            disabled={photos.length === 0 || !selectedProject}
           >
-            {isUploading ? 'Uploading...' : 'Save Update'}
+            {isUploading ? 'Uploading...' : `Save ${photos.length} Photo${photos.length > 1 ? 's' : ''}`}
           </Button>
         </div>
       </div>
