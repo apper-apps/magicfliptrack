@@ -54,8 +54,48 @@
     @apply absolute inset-0 bg-gradient-to-r from-error/90 to-red-600/90 text-white rounded-xl flex items-center justify-center animate-pulse-border border-2 border-error;
   }
   
-  .stage-badge {
+.stage-badge {
     @apply inline-flex items-center px-3 py-1 rounded-full text-sm font-medium;
+  }
+  
+  .progress-bar-container {
+    @apply relative w-full bg-gray-200 rounded-full h-2 overflow-hidden;
+  }
+  
+  .progress-bar-fill {
+    @apply h-full bg-gradient-to-r from-primary-500 to-primary-600 rounded-full transition-all duration-1000 ease-out;
+  }
+  
+  .stage-indicator {
+    @apply absolute top-1/2 transform -translate-y-1/2 -translate-x-1/2 w-6 h-6 rounded-full border-2 flex items-center justify-center cursor-pointer transition-all duration-200 hover:scale-110 active:scale-95;
+  }
+  
+  .stage-indicator.completed {
+    @apply bg-success border-success text-white shadow-lg;
+  }
+  
+  .stage-indicator.active {
+    @apply bg-primary-500 border-primary-500 text-white shadow-lg animate-stage-pulse;
+  }
+  
+  .stage-indicator.inactive {
+    @apply bg-gray-300 border-gray-400 text-gray-600;
+  }
+  
+  .stage-indicator.clickable:hover {
+    @apply shadow-xl;
+  }
+  
+  .stage-indicator.clickable:active {
+    @apply animate-scale-tap;
+  }
+  
+  .stage-modal-overlay {
+    @apply fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+  }
+  
+  .stage-modal-content {
+    @apply bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-hidden shadow-2xl;
   }
   
   .quick-capture-bar {

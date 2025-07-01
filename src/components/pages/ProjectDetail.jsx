@@ -8,6 +8,7 @@ import Error from '@/components/ui/Error';
 import Button from '@/components/atoms/Button';
 import Badge from '@/components/atoms/Badge';
 import StageSelector from '@/components/molecules/StageSelector';
+import ProgressBar from '@/components/molecules/ProgressBar';
 import MediaTimeline from '@/components/organisms/MediaTimeline';
 import QuickCaptureBar from '@/components/molecules/QuickCaptureBar';
 import { useProjects } from '@/hooks/useProjects';
@@ -24,7 +25,7 @@ const ProjectDetail = () => {
   const [error, setError] = useState('');
   
   const { updateProjectStage } = useProjects();
-  const { media, loading: mediaLoading, loadMedia } = useMedia(id);
+  const { media, loading: mediaLoading, loadMedia, getMediaByStage } = useMedia(id);
   const { compliance, markProjectUpdated } = useCompliance(id);
 
   useEffect(() => {
@@ -64,6 +65,19 @@ const ProjectDetail = () => {
       toast.success(`Project stage updated to ${newStage}`);
     } catch (err) {
       toast.error('Failed to update project stage');
+    }
+};
+
+  const handleStageClick = async (stage) => {
+    try {
+      const stageMedia = await getMediaByStage(stage);
+      if (stageMedia.length === 0) {
+        toast.info(`No photos or updates available for ${stage} stage yet`);
+        return;
+      }
+      // Media viewing will be handled by ProgressBar component
+    } catch (err) {
+      toast.error('Failed to load stage media');
     }
   };
 
@@ -129,22 +143,13 @@ const ProjectDetail = () => {
             </Badge>
           </div>
 
-          {/* Progress Bar */}
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm text-gray-600">
-              <span>Project Progress</span>
-              <span>{Math.round(progress)}% Complete</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-3">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${progress}%` }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="bg-gradient-to-r from-primary-500 to-primary-600 h-3 rounded-full"
-              />
-            </div>
-          </div>
-
+{/* Interactive Progress Bar */}
+          <ProgressBar
+            currentStage={project.currentStage}
+            progress={progress}
+            onStageClick={handleStageClick}
+            projectId={id}
+          />
           {/* Project Stats */}
           <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="bg-gray-50 rounded-lg p-3 text-center">

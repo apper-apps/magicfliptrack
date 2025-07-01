@@ -19,6 +19,17 @@ export const useMedia = (projectId = null) => {
     } finally {
       setLoading(false);
     }
+};
+
+  const getMediaByStage = async (stage) => {
+    try {
+      setError('');
+      const stageMedia = media.filter(item => item.stage === stage);
+      return stageMedia;
+    } catch (err) {
+      setError(err.message || 'Failed to filter media by stage');
+      throw err;
+    }
   };
 
   const createMedia = async (mediaData) => {
@@ -60,11 +71,12 @@ export const useMedia = (projectId = null) => {
     loadMedia();
   }, [projectId]);
 
-  return {
+return {
     media,
     loading,
     error,
     loadMedia,
+    getMediaByStage,
     createMedia,
     updateMedia,
     deleteMedia
