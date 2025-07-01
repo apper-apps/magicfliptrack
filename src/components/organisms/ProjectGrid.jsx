@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import ProjectCard from '@/components/molecules/ProjectCard';
 import Empty from '@/components/ui/Empty';
 
-const ProjectGrid = ({ projects, compliance, onProjectCapture }) => {
+const ProjectGrid = ({ projects, compliance, onProjectCapture, onAddProject }) => {
   if (!projects || projects.length === 0) {
     return (
       <Empty
@@ -11,10 +11,7 @@ const ProjectGrid = ({ projects, compliance, onProjectCapture }) => {
         description="Start your first fix & flip project to begin tracking progress with visual updates"
         actionText="Add Project"
         iconName="Home"
-        onAction={() => {
-          // This would typically open a create project modal or navigate to create page
-          console.log('Add project clicked');
-        }}
+        onAction={onAddProject}
       />
     );
   }

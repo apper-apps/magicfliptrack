@@ -6,13 +6,16 @@ import Loading from '@/components/ui/Loading';
 import Error from '@/components/ui/Error';
 import ProjectStats from '@/components/organisms/ProjectStats';
 import ProjectGrid from '@/components/organisms/ProjectGrid';
+import ProjectCreationModal from '@/components/molecules/ProjectCreationModal';
 import { useProjects } from '@/hooks/useProjects';
 import { useCompliance } from '@/hooks/useCompliance';
 
 const Dashboard = () => {
-  const { projects, loading, error, loadProjects } = useProjects();
+  const { projects, loading, error, loadProjects, createProject } = useProjects();
   const { compliance, loadCompliance } = useCompliance();
   const [refreshing, setRefreshing] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!loading && projects.length > 0) {
@@ -29,6 +32,23 @@ const Dashboard = () => {
       toast.error('Failed to refresh dashboard');
     } finally {
       setRefreshing(false);
+    }
+  };
+
+const handleAddProject = () => {
+    setShowCreateModal(true);
+  };
+
+  const handleCreateProject = async (projectData) => {
+    try {
+      setCreating(true);
+      await createProject(projectData);
+      setShowCreateModal(false);
+      toast.success('Project created successfully!');
+    } catch (error) {
+      toast.error('Failed to create project. Please try again.');
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -99,10 +119,11 @@ const Dashboard = () => {
             </div>
           </div>
           
-          <ProjectGrid
+<ProjectGrid
             projects={projects.filter(p => p.status === 'In Progress')}
             compliance={compliance}
             onProjectCapture={handleProjectCapture}
+            onAddProject={handleAddProject}
           />
         </div>
         
@@ -119,14 +140,22 @@ const Dashboard = () => {
               </div>
             </div>
             
-            <ProjectGrid
+<ProjectGrid
               projects={projects.filter(p => p.status === 'Complete' || p.status === 'Sold')}
               compliance={compliance}
               onProjectCapture={handleProjectCapture}
             />
           </div>
         )}
-      </div>
+</div>
+
+      {/* Project Creation Modal */}
+      <ProjectCreationModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onSubmit={handleCreateProject}
+        loading={creating}
+      />
     </div>
   );
 };
