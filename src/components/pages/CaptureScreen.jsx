@@ -1,15 +1,16 @@
-import React, { useState, useRef } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { toast } from 'react-toastify';
-import ApperIcon from '@/components/ApperIcon';
-import Button from '@/components/atoms/Button';
-import Input from '@/components/atoms/Input';
-import Badge from '@/components/atoms/Badge';
-import { useMedia } from '@/hooks/useMedia';
-import { useCompliance } from '@/hooks/useCompliance';
-import { PROJECT_STAGES } from '@/utils/stageUtils';
-
+import React, { useRef, useState } from "react";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
+import { motion } from "framer-motion";
+import { toast } from "react-toastify";
+import { useMedia } from "@/hooks/useMedia";
+import { useCompliance } from "@/hooks/useCompliance";
+import { useProjects } from "@/hooks/useProjects";
+import { PROJECT_STAGES } from "@/utils/stageUtils";
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Input from "@/components/atoms/Input";
+import Button from "@/components/atoms/Button";
+import Loading from "@/components/ui/Loading";
 const CaptureScreen = () => {
   const { projectId } = useParams();
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ const CaptureScreen = () => {
   const initialType = searchParams.get('type') || 'photo';
   
   const [captureType, setCaptureType] = useState(initialType);
+  const [selectedProject, setSelectedProject] = useState(projectId || '');
   const [selectedStage, setSelectedStage] = useState('Demo');
   const [notes, setNotes] = useState('');
   const [isRecording, setIsRecording] = useState(false);
@@ -26,16 +28,67 @@ const CaptureScreen = () => {
   const fileInputRef = useRef(null);
   const { createMedia } = useMedia();
   const { markProjectUpdated } = useCompliance();
-
-  const handleCameraCapture = () => {
-    // In a real app, this would open the device camera
-    toast.info('Camera functionality would open here');
-    // Simulate captured media
-    setCapturedMedia({
-      type: captureType,
-      url: '/api/placeholder/800/600',
-      timestamp: new Date().toISOString()
-    });
+  const { projects, loading: projectsLoading } = useProjects();
+const handleCameraCapture = async () => {
+    try {
+      // Check if camera is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast.error('Camera not supported by this browser');
+        return;
+      }
+      
+      // Request camera access
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use back camera on mobile
+      });
+      
+      // Create video element to capture frame
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+      
+      video.onloadedmetadata = () => {
+        // Create canvas to capture frame
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to blob
+        canvas.toBlob((blob) => {
+          const url = URL.createObjectURL(blob);
+          setCapturedMedia({
+            type: 'photo',
+            url: url,
+            timestamp: new Date().toISOString(),
+            file: blob
+          });
+          
+          // Stop camera stream
+          stream.getTracks().forEach(track => track.stop());
+          toast.success('Photo captured successfully!');
+        }, 'image/jpeg', 0.9);
+      };
+      
+    } catch (error) {
+      console.error('Camera access error:', error);
+      
+      if (error.name === 'NotAllowedError') {
+        toast.error('Camera access denied. Please allow camera permissions.');
+      } else if (error.name === 'NotFoundError') {
+        toast.error('No camera found on this device');
+      } else {
+        toast.error('Failed to access camera. Please try uploading a file instead.');
+      }
+      
+      // Fallback to simulated capture for demo purposes
+      setCapturedMedia({
+        type: captureType,
+        url: '/api/placeholder/800/600',
+        timestamp: new Date().toISOString()
+      });
+    }
   };
 
   const handleFileUpload = (event) => {
@@ -76,7 +129,12 @@ const CaptureScreen = () => {
     }
   };
 
-  const handleSave = async () => {
+const handleSave = async () => {
+    if (!selectedProject) {
+      toast.error('Please select a project first');
+      return;
+    }
+
     if (!capturedMedia) {
       toast.error('Please capture some media first');
       return;
@@ -87,11 +145,11 @@ const CaptureScreen = () => {
       return;
     }
 
-    try {
+try {
       setIsUploading(true);
       
       const mediaData = {
-        projectId: projectId || '1',
+        projectId: selectedProject,
         type: capturedMedia.type,
         stage: selectedStage,
         notes: notes.trim(),
@@ -99,16 +157,16 @@ const CaptureScreen = () => {
 
       await createMedia(mediaData);
       
-      // Mark project as updated to clear compliance flags
-      if (projectId) {
-        await markProjectUpdated(projectId);
+// Mark project as updated to clear compliance flags
+      if (selectedProject) {
+        await markProjectUpdated(selectedProject);
       }
       
       toast.success(`${capturedMedia.type === 'video' ? 'Video' : 'Photo'} uploaded successfully!`);
       
       // Navigate back
-      if (projectId) {
-        navigate(`/project/${projectId}`);
+      if (selectedProject) {
+        navigate(`/project/${selectedProject}`);
       } else {
         navigate('/');
       }
@@ -138,12 +196,15 @@ const CaptureScreen = () => {
             >
               <ApperIcon name="ArrowLeft" size={20} />
             </motion.button>
-            <div className="flex-1">
+<div className="flex-1">
               <h1 className="text-2xl font-display font-bold text-gray-900">
                 Capture Update
               </h1>
               <p className="text-gray-600">
-                {projectId ? `Project #${projectId}` : 'Select a project'}
+                {selectedProject ? 
+                  projects.find(p => p.Id === parseInt(selectedProject))?.Name || `Project #${selectedProject}` : 
+                  'Select a project'
+                }
               </p>
             </div>
             <Badge variant="primary">
@@ -153,8 +214,43 @@ const CaptureScreen = () => {
         </div>
       </div>
 
-      {/* Content */}
+{/* Content */}
       <div className="p-4 space-y-6">
+        {/* Project Selection */}
+        <div className="bg-white rounded-xl shadow-lg p-4">
+          <h3 className="font-display font-bold text-lg text-gray-900 mb-4">
+            Select Project <span className="text-red-500">*</span>
+          </h3>
+          {projectsLoading ? (
+            <div className="flex items-center justify-center p-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary-500"></div>
+              <span className="ml-2 text-gray-600">Loading projects...</span>
+            </div>
+          ) : (
+            <select
+              value={selectedProject}
+              onChange={(e) => setSelectedProject(e.target.value)}
+              className={`w-full p-3 border-2 rounded-lg transition-all ${
+                selectedProject 
+                  ? 'border-primary-500 bg-primary-50 text-primary-700' 
+                  : 'border-red-300 bg-red-50 text-gray-700'
+              }`}
+              required
+            >
+              <option value="">Choose a project...</option>
+              {projects.map((project) => (
+                <option key={project.Id} value={project.Id}>
+                  {project.Name} - {project.address}
+                </option>
+              ))}
+            </select>
+          )}
+          {!selectedProject && (
+            <p className="text-red-500 text-sm mt-2">
+              Please select a project before capturing media
+            </p>
+          )}
+        </div>
         {/* Capture Type Selector */}
         <div className="bg-white rounded-xl shadow-lg p-4">
           <h3 className="font-display font-bold text-lg text-gray-900 mb-4">
@@ -209,11 +305,13 @@ const CaptureScreen = () => {
               </div>
               
               {/* Capture Controls */}
+{/* Capture Controls */}
               <div className="grid grid-cols-3 gap-3">
                 <Button
                   variant="outline"
                   icon="Upload"
                   onClick={() => fileInputRef.current?.click()}
+                  disabled={!selectedProject}
                 >
                   Upload
                 </Button>
@@ -224,6 +322,7 @@ const CaptureScreen = () => {
                     icon={isRecording ? 'Square' : 'Video'}
                     onClick={handleVideoRecord}
                     className="col-span-2"
+                    disabled={!selectedProject}
                   >
                     {isRecording ? 'Stop Recording' : 'Start Recording'}
                   </Button>
@@ -233,8 +332,8 @@ const CaptureScreen = () => {
                     icon="Camera"
                     onClick={handleCameraCapture}
                     className="col-span-2"
-                  >
-                    Take Photo
+                    disabled={!selectedProject}
+Take Photo
                   </Button>
                 )}
               </div>
@@ -331,9 +430,9 @@ const CaptureScreen = () => {
             size="lg"
             fullWidth
             loading={isUploading}
-            onClick={handleSave}
+onClick={handleSave}
             icon="Upload"
-            disabled={!capturedMedia}
+            disabled={!capturedMedia || !selectedProject}
           >
             {isUploading ? 'Uploading...' : 'Save Update'}
           </Button>
