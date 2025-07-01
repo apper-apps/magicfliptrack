@@ -89,32 +89,69 @@ const handleCameraCapture = async () => {
       console.error('Camera access error:', error);
       
       if (error.name === 'NotAllowedError') {
-        toast.error('Camera access denied. Please enable camera permissions in your browser settings and try again. You can also use the Upload button to select photos from your device.');
+        toast.error('Camera access denied. To use your camera, please click the camera icon in your browser\'s address bar and allow camera access, then try again. Alternatively, you can use the "Upload" button to select photos from your device.');
       } else if (error.name === 'NotFoundError') {
-        toast.error('No camera found on this device. Please use the Upload button to select photos from your device instead.');
+        toast.error('No camera detected on this device. Please use the "Upload" button to select photos from your device gallery instead.');
       } else if (error.name === 'NotReadableError') {
-        toast.error('Camera is currently in use by another application. Please close other camera apps and try again, or use the Upload button.');
+        toast.error('Camera is currently being used by another application. Please close any other camera apps (like video calls, photo apps) and try again, or use the "Upload" button to select existing photos.');
       } else if (error.name === 'OverconstrainedError') {
-        toast.error('Camera constraints not supported. Trying with default settings...');
+        toast.info('Trying camera with basic settings...');
         // Try again with basic constraints
         try {
           const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
-          // Continue with simplified camera setup...
-          fallbackStream.getTracks().forEach(track => track.stop());
+          
+          // Create video element to capture frame with fallback settings
+          const video = document.createElement('video');
+          video.srcObject = fallbackStream;
+          video.play();
+          
+          video.onloadedmetadata = () => {
+            // Create canvas to capture frame
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to blob
+            canvas.toBlob((blob) => {
+              const url = URL.createObjectURL(blob);
+              const newPhoto = {
+                type: 'photo',
+                url: url,
+                timestamp: new Date().toISOString(),
+                file: blob
+              };
+              
+              addPhoto(newPhoto);
+              
+              // Stop camera stream
+              fallbackStream.getTracks().forEach(track => track.stop());
+              toast.success(`Photo ${photos.length + 1} captured successfully with basic camera settings!`);
+            }, 'image/jpeg', 0.9);
+          };
+          
         } catch (fallbackError) {
-          toast.error('Camera access failed. Please use the Upload button to select photos from your device.');
+          console.error('Fallback camera access failed:', fallbackError);
+          toast.error('Camera access failed with both advanced and basic settings. Please use the "Upload" button to select photos from your device.');
         }
+      } else if (error.name === 'NotSupportedError') {
+        toast.error('Camera is not supported by this browser. Please try using Chrome, Firefox, Safari, or Edge, or use the "Upload" button to select photos.');
+      } else if (error.name === 'AbortError') {
+        toast.error('Camera access was interrupted. Please try again or use the "Upload" button to select photos from your device.');
       } else {
-        toast.error('Camera access failed. Please check your browser permissions or use the Upload button to select photos from your device.');
+        toast.error('Unable to access camera. This may be due to browser security settings or hardware issues. Please try refreshing the page, check your browser permissions, or use the "Upload" button to select photos from your device.');
       }
       
-      // Fallback to simulated capture for demo purposes
-      const fallbackPhoto = {
-        type: 'photo',
-        url: '/api/placeholder/800/600',
-        timestamp: new Date().toISOString()
-      };
-      addPhoto(fallbackPhoto);
+      // Only add fallback photo for non-permission errors to avoid confusion
+      if (error.name !== 'NotAllowedError' && error.name !== 'NotFoundError') {
+        const fallbackPhoto = {
+          type: 'photo',
+          url: '/api/placeholder/800/600',
+          timestamp: new Date().toISOString()
+        };
+        addPhoto(fallbackPhoto);
+      }
     }
   };
 
