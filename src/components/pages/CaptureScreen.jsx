@@ -47,13 +47,16 @@ const handleCameraCapture = async () => {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         toast.error('Camera not supported by this browser');
         return;
-      }
+}
       
-      // Request camera access
+      // Request camera access with optimized mobile constraints
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } // Use back camera on mobile
+        video: { 
+          facingMode: 'environment', // Use back camera on mobile
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        } 
       });
-      
       // Create video element to capture frame
       const video = document.createElement('video');
       video.srcObject = stream;
@@ -97,8 +100,13 @@ const handleCameraCapture = async () => {
       } else if (error.name === 'OverconstrainedError') {
         toast.info('Trying camera with basic settings...');
         // Try again with basic constraints
-        try {
-          const fallbackStream = await navigator.mediaDevices.getUserMedia({ video: true });
+try {
+          const fallbackStream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: { ideal: 1280, max: 1280 },
+              height: { ideal: 720, max: 720 }
+            } 
+          });
           
           // Create video element to capture frame with fallback settings
           const video = document.createElement('video');
@@ -369,13 +377,13 @@ const handleDiscard = () => {
               
               {/* Capture Controls */}
               <div className="grid grid-cols-3 gap-3">
-                <Button
+<Button
                   variant="outline"
-                  icon="Upload"
+                  icon="Camera"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!selectedProject}
                 >
-                  Upload
+                  Camera/Gallery
                 </Button>
                 
                 <Button
@@ -438,7 +446,7 @@ const handleDiscard = () => {
               
               {/* Batch Controls */}
               <div className="flex gap-3">
-                <Button
+<Button
                   variant="outline"
                   icon="RotateCcw"
                   onClick={handleDiscard}
@@ -447,11 +455,11 @@ const handleDiscard = () => {
                 </Button>
                 <Button
                   variant="outline"
-                  icon="Upload"
+                  icon="Camera"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={!selectedProject}
                 >
-                  Add Files
+                  Camera/Gallery
                 </Button>
               </div>
             </div>
@@ -461,6 +469,7 @@ const handleDiscard = () => {
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            capture="camera"
             multiple
             onChange={handleFileUpload}
             className="hidden"
