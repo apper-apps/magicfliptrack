@@ -46,8 +46,8 @@
     @apply bg-white rounded-xl shadow-xl border border-gray-100;
   }
   
-  .project-card {
-    @apply card-elevated p-4 transition-all duration-200 hover:shadow-2xl hover:scale-102;
+.project-card {
+    @apply card-elevated p-4 transition-all duration-200 hover:shadow-2xl hover:scale-105;
   }
   
   .compliance-flag {
