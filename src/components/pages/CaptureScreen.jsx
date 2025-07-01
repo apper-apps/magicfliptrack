@@ -327,13 +327,14 @@ try {
                     {isRecording ? 'Stop Recording' : 'Start Recording'}
                   </Button>
                 ) : (
-                  <Button
+<Button
                     variant="primary"
                     icon="Camera"
                     onClick={handleCameraCapture}
                     className="col-span-2"
                     disabled={!selectedProject}
-Take Photo
+                  >
+                    Take Photo
                   </Button>
                 )}
               </div>
