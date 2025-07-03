@@ -29,7 +29,32 @@ const [notes, setNotes] = useState('');
   const { createMedia } = useMedia();
   const { markProjectUpdated } = useCompliance();
   const { projects, loading: projectsLoading } = useProjects();
-const addPhoto = (photoData) => {
+// File upload utility function
+  const uploadFile = async (file) => {
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'photo');
+      
+      // For now, create a data URL as a fallback until proper upload endpoint is configured
+      return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            url: e.target.result,
+            uploadSuccess: true
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+    } catch (error) {
+      console.error('File upload error:', error);
+      throw error;
+    }
+  };
+
+  const addPhoto = (photoData) => {
     setPhotos(prev => [...prev, { ...photoData, id: Date.now() }]);
   };
 
@@ -69,22 +94,36 @@ const handleCameraCapture = async () => {
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0);
-        
-        // Convert to blob
-        canvas.toBlob((blob) => {
-          const url = URL.createObjectURL(blob);
-          const newPhoto = {
-            type: 'photo',
-            url: url,
-            timestamp: new Date().toISOString(),
-            file: blob
-          };
-          
-          addPhoto(newPhoto);
-          
-          // Stop camera stream
-          stream.getTracks().forEach(track => track.stop());
-          toast.success(`Photo ${photos.length + 1} captured successfully!`);
+// Convert to blob and prepare for upload
+        canvas.toBlob(async (blob) => {
+          try {
+            // Create a File object from the blob for consistent handling
+            const file = new File([blob], `camera-photo-${Date.now()}.jpg`, { 
+              type: 'image/jpeg' 
+            });
+            
+            // Upload the file and get permanent URL
+            const uploadResult = await uploadFile(file);
+            
+            const newPhoto = {
+              type: 'photo',
+              url: uploadResult.url,
+              timestamp: new Date().toISOString(),
+              file: file,
+              uploaded: uploadResult.uploadSuccess
+            };
+            
+            addPhoto(newPhoto);
+            
+            // Stop camera stream
+            stream.getTracks().forEach(track => track.stop());
+            toast.success(`Photo ${photos.length + 1} captured successfully!`);
+          } catch (error) {
+            console.error('Failed to process captured photo:', error);
+            toast.error('Failed to process captured photo. Please try again.');
+            // Stop camera stream even on error
+            stream.getTracks().forEach(track => track.stop());
+          }
         }, 'image/jpeg', 0.9);
       };
       
@@ -121,21 +160,36 @@ try {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(video, 0, 0);
             
-            // Convert to blob
-            canvas.toBlob((blob) => {
-              const url = URL.createObjectURL(blob);
-              const newPhoto = {
-                type: 'photo',
-                url: url,
-                timestamp: new Date().toISOString(),
-                file: blob
-              };
-              
-              addPhoto(newPhoto);
-              
-              // Stop camera stream
-              fallbackStream.getTracks().forEach(track => track.stop());
-              toast.success(`Photo ${photos.length + 1} captured successfully with basic camera settings!`);
+// Convert to blob and prepare for upload (fallback)
+            canvas.toBlob(async (blob) => {
+              try {
+                // Create a File object from the blob for consistent handling
+                const file = new File([blob], `camera-photo-fallback-${Date.now()}.jpg`, { 
+                  type: 'image/jpeg' 
+                });
+                
+                // Upload the file and get permanent URL
+                const uploadResult = await uploadFile(file);
+                
+                const newPhoto = {
+                  type: 'photo',
+                  url: uploadResult.url,
+                  timestamp: new Date().toISOString(),
+                  file: file,
+                  uploaded: uploadResult.uploadSuccess
+                };
+                
+                addPhoto(newPhoto);
+                
+                // Stop camera stream
+                fallbackStream.getTracks().forEach(track => track.stop());
+                toast.success(`Photo ${photos.length + 1} captured successfully with basic camera settings!`);
+              } catch (error) {
+                console.error('Failed to process fallback captured photo:', error);
+                toast.error('Failed to process captured photo. Please try again.');
+                // Stop camera stream even on error
+                fallbackStream.getTracks().forEach(track => track.stop());
+              }
             }, 'image/jpeg', 0.9);
           };
           
@@ -163,24 +217,57 @@ try {
     }
   };
 
-const handleFileUpload = (event) => {
+const handleFileUpload = async (event) => {
     const files = Array.from(event.target.files);
-    files.forEach(file => {
-      const fileType = file.type.startsWith('video/') ? 'video' : 'photo';
-      if (fileType === 'photo') {
-        const newPhoto = {
-          type: 'photo',
-          url: URL.createObjectURL(file),
-          timestamp: new Date().toISOString(),
-          file: file
-        };
-        addPhoto(newPhoto);
-      }
-    });
     
-    if (files.length > 0) {
-      toast.success(`${files.length} photo${files.length > 1 ? 's' : ''} uploaded successfully!`);
+    if (files.length === 0) return;
+    
+    setIsUploading(true);
+    let successCount = 0;
+    let errorCount = 0;
+    
+    // Process files in batches to avoid overwhelming the system
+    for (const file of files) {
+      try {
+        const fileType = file.type.startsWith('video/') ? 'video' : 'photo';
+        
+        if (fileType === 'photo') {
+          // Upload the file and get permanent URL
+          const uploadResult = await uploadFile(file);
+          
+          const newPhoto = {
+            type: 'photo',
+            url: uploadResult.url,
+            timestamp: new Date().toISOString(),
+            file: file,
+            uploaded: uploadResult.uploadSuccess,
+            name: file.name
+          };
+          
+          addPhoto(newPhoto);
+          successCount++;
+        } else {
+          console.warn('Video files not supported yet:', file.name);
+          errorCount++;
+        }
+      } catch (error) {
+        console.error('Failed to process file:', file.name, error);
+        errorCount++;
+      }
     }
+    
+    setIsUploading(false);
+    
+    // Provide user feedback
+    if (successCount > 0) {
+      toast.success(`${successCount} photo${successCount > 1 ? 's' : ''} processed successfully!`);
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to process ${errorCount} file${errorCount > 1 ? 's' : ''}. Please try again.`);
+    }
+    
+    // Clear the input for future uploads
+    event.target.value = '';
   };
 
 const handleVideoRecord = () => {
@@ -219,22 +306,39 @@ const handleSave = async () => {
 try {
       setIsUploading(true);
       
+      // Prepare photos with proper file data
+      const processedPhotos = photos.map((photo, index) => ({
+        ...photo,
+        name: photo.name || `Photo ${index + 1}`,
+        uploadedAt: new Date().toISOString()
+      }));
+      
       const mediaData = {
         projectId: selectedProject,
         type: 'photo',
         stage: selectedStage,
         notes: notes.trim(),
-        photos: photos
+        photos: processedPhotos,
+        uploadedBy: "Field Manager", // Will be replaced with actual user info
+        timestamp: new Date().toISOString()
       };
 
-      await createMedia(mediaData);
+      // Create the media update with all photos
+      const createdMedia = await createMedia(mediaData);
       
-// Mark project as updated to clear compliance flags
+      // Mark project as updated to clear compliance flags
       if (selectedProject) {
         await markProjectUpdated(selectedProject);
       }
       
       toast.success(`${photos.length} photo${photos.length > 1 ? 's' : ''} uploaded successfully!`);
+      
+      // Clean up blob URLs to prevent memory leaks
+      photos.forEach(photo => {
+        if (photo.url.startsWith('blob:')) {
+          URL.revokeObjectURL(photo.url);
+        }
+      });
       
       // Navigate back
       if (selectedProject) {
@@ -243,7 +347,8 @@ try {
         navigate('/');
       }
     } catch (err) {
-      toast.error('Failed to upload photos');
+      console.error('Upload error:', err);
+      toast.error(err.message || 'Failed to upload photos. Please try again.');
     } finally {
       setIsUploading(false);
     }

@@ -300,7 +300,7 @@ throw error;
     }
   },
 
-  async createWithPhotos(mediaData) {
+async createWithPhotos(mediaData) {
     try {
       const { ApperClient } = window.ApperSDK;
       const apperClient = new ApperClient({
@@ -308,17 +308,80 @@ throw error;
         apperPublicKey: import.meta.env.VITE_APPER_PUBLIC_KEY
       });
 
+      // Validate required data
+      if (!mediaData.projectId) {
+        throw new Error('Project ID is required');
+      }
+      
+      if (!mediaData.photos || mediaData.photos.length === 0) {
+        throw new Error('At least one photo is required');
+      }
+
+      // Process photos and prepare URLs
+      const processedPhotos = await Promise.all(
+        mediaData.photos.map(async (photo, index) => {
+          try {
+            // For now, use the photo URL directly
+            // In a production environment, you would upload the file to a storage service
+            // and get back a permanent URL
+            let finalUrl = photo.url;
+            let thumbnailUrl = photo.url;
+            
+            // If it's a data URL (base64), keep it as is for now
+            // In production, this would be uploaded to cloud storage
+            if (photo.url.startsWith('data:')) {
+              finalUrl = photo.url;
+              thumbnailUrl = photo.url;
+            } else if (photo.url.startsWith('blob:')) {
+              // Convert blob URL to data URL for persistence
+              try {
+                const response = await fetch(photo.url);
+                const blob = await response.blob();
+                const dataUrl = await new Promise((resolve) => {
+                  const reader = new FileReader();
+                  reader.onload = () => resolve(reader.result);
+                  reader.readAsDataURL(blob);
+                });
+                finalUrl = dataUrl;
+                thumbnailUrl = dataUrl;
+              } catch (blobError) {
+                console.warn('Failed to convert blob URL:', blobError);
+                finalUrl = "/api/placeholder/800/600";
+                thumbnailUrl = "/api/placeholder/200/150";
+              }
+            }
+            
+            return {
+              ...photo,
+              url: finalUrl,
+              thumbnail_url: thumbnailUrl,
+              processed: true
+            };
+          } catch (photoError) {
+            console.error(`Failed to process photo ${index + 1}:`, photoError);
+            return {
+              ...photo,
+              url: "/api/placeholder/800/600",
+              thumbnail_url: "/api/placeholder/200/150",
+              processed: false,
+              error: photoError.message
+            };
+          }
+        })
+      );
+
       // First create the media update record
+      const primaryPhotoUrl = processedPhotos[0]?.url || "/api/placeholder/800/600";
       const mediaUpdateData = {
-        Name: `Photo Update - ${mediaData.stage}`,
+        Name: `Photo Update - ${mediaData.stage} (${processedPhotos.length} photos)`,
         Tags: mediaData.tags || "",
         Owner: mediaData.owner,
         type: 'photo',
-        url: mediaData.photos?.[0]?.url || "/api/placeholder/800/600",
-        thumbnail_url: mediaData.photos?.[0]?.url || "/api/placeholder/200/150",
+        url: primaryPhotoUrl,
+        thumbnail_url: primaryPhotoUrl,
         stage: mediaData.stage,
         notes: mediaData.notes || "",
-        timestamp: new Date().toISOString(),
+        timestamp: mediaData.timestamp || new Date().toISOString(),
         uploaded_by: mediaData.uploadedBy || "Field Manager",
         project_id: parseInt(mediaData.projectId)
       };
@@ -348,43 +411,50 @@ throw error;
       }
 
       // Then create individual photo records linked to the media update
-      if (mediaData.photos && mediaData.photos.length > 0) {
-        const photoRecords = mediaData.photos.map((photo, index) => ({
-          Name: `Photo ${index + 1} - ${mediaData.stage}`,
-          Tags: mediaData.tags || "",
-          Owner: mediaData.owner,
-          media_update_id: mediaUpdateRecord.Id,
-          url: photo.url || "/api/placeholder/800/600",
-          thumbnail_url: photo.url || "/api/placeholder/200/150"
-        }));
+      const photoRecords = processedPhotos.map((photo, index) => ({
+        Name: photo.name || `Photo ${index + 1} - ${mediaData.stage}`,
+        Tags: mediaData.tags || "",
+        Owner: mediaData.owner,
+        media_update_id: mediaUpdateRecord.Id,
+        url: photo.url,
+        thumbnail_url: photo.thumbnail_url || photo.url
+      }));
 
-        const photoParams = {
-          records: photoRecords
-        };
+      const photoParams = {
+        records: photoRecords
+      };
 
-        const photoResponse = await apperClient.createRecord('photo', photoParams);
+      const photoResponse = await apperClient.createRecord('photo', photoParams);
+      
+      if (!photoResponse.success) {
+        console.error(photoResponse.message);
+        toast.error(`Media update created but photos failed: ${photoResponse.message}`);
+        // Continue even if photo creation fails, media update was successful
+      } else if (photoResponse.results) {
+        const successfulPhotos = photoResponse.results.filter(result => result.success);
+        const failedPhotos = photoResponse.results.filter(result => !result.success);
         
-        if (!photoResponse.success) {
-          console.error(photoResponse.message);
-          toast.error(photoResponse.message);
-          // Continue even if photo creation fails, media update was successful
-        }
-
-        if (photoResponse.results) {
-          const failedPhotos = photoResponse.results.filter(result => !result.success);
-          if (failedPhotos.length > 0) {
-            console.error(`Failed to create ${failedPhotos.length} photos:${JSON.stringify(failedPhotos)}`);
-            failedPhotos.forEach(record => {
-              record.errors?.forEach(error => {
-                toast.error(`Photo error - ${error.fieldLabel}: ${error.message}`);
-              });
-              if (record.message) toast.error(`Photo error: ${record.message}`);
+        if (failedPhotos.length > 0) {
+          console.error(`Failed to create ${failedPhotos.length} photos:${JSON.stringify(failedPhotos)}`);
+          failedPhotos.forEach(record => {
+            record.errors?.forEach(error => {
+              toast.error(`Photo error - ${error.fieldLabel}: ${error.message}`);
             });
-          }
+            if (record.message) toast.error(`Photo error: ${record.message}`);
+          });
+        }
+        
+        if (successfulPhotos.length > 0) {
+          toast.success(`${successfulPhotos.length} of ${photoRecords.length} photos linked successfully`);
         }
       }
 
-      return mediaUpdateRecord;
+      // Return the media update record with photo count info
+      return {
+        ...mediaUpdateRecord,
+        photoCount: processedPhotos.length,
+        successfulPhotos: photoResponse?.results?.filter(r => r.success)?.length || 0
+      };
     } catch (error) {
       console.error("Error creating media with photos:", error);
       throw error;
